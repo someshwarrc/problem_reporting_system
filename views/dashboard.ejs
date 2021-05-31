@@ -1,0 +1,872 @@
+<style>
+  .del-col {
+    opacity: 0;
+    cursor: pointer;
+    transition: all 500ms;
+  }
+
+  tr:hover .del-col {
+    opacity: 1;
+  }
+</style>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <p class="navbar-brand">
+    Webel
+  </p>
+  <button
+    class="navbar-toggler"
+    type="button"
+    data-toggle="collapse"
+    data-target="#navbarSupportedContent"
+    aria-controls="navbarSupportedContent"
+    aria-expanded="false"
+    aria-label="Toggle navigation"
+  >
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item mx-3 my-auto text-secondary">
+        Welcome <%= user.name.charAt(0).toUpperCase() + user.name.slice(1) %>
+      </li>
+      <% if( user.role === "ADMIN"){ %>
+      <li class="nav-item mx-3">
+        <a href="/employee/add" class="btn btn-secondary">Add Employee</a>
+      </li>
+      <li class="nav-item mx-3">
+        <a
+          href="#"
+          class="btn btn-primary"
+          data-toggle="modal"
+          data-target="#reportModal"
+          >Report</a
+        >
+      </li>
+
+      <% if(typeof employeeList == "undefined") { %>
+      <li class="nav-item mx-3">
+        <a href="/employee" class="btn btn-secondary">Employees</a>
+      </li>
+      <% } else { %>
+      <li class="nav-item mx-3">
+        <a href="/dashboard" class="btn btn-secondary">Problems</a>
+      </li>
+      <% } %> <% } %> <% if( user.role === "STAFF"){ %>
+      <li class="nav-item mx-3">
+        <a href="/problems/add" class="btn btn-secondary">Report New Problem</a>
+      </li>
+      <% } %>
+      <li class="nav-item mx-3">
+        <a href="/users/logout" class="btn btn-secondary">Logout</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<h1 class="mt-4 mx-2"><%= user.role %> Dashboard</h1>
+<%- include("partials/messages.ejs"); %>
+
+<div class="main-content container-fluid">
+  <% if(typeof employeeList === "undefined" && typeof problems !== "undefined"
+  && problems !== null && problems.length !== 0) { %>
+  <h4 class="text-info">List of problems</h4>
+  <ul class="nav nav-tabs" id="problemTab" role="tablist">
+    <li class="nav-item">
+      <a
+        class="nav-link active"
+        id="all-tab"
+        data-toggle="tab"
+        href="#all"
+        role="tab"
+        aria-controls="all"
+        aria-selected="true"
+        >All</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        id="unassigned-tab"
+        data-toggle="tab"
+        href="#unassigned"
+        role="tab"
+        aria-controls="unassigned"
+        aria-selected="false"
+        >Unassigned</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        id="pending-tab"
+        data-toggle="tab"
+        href="#pending"
+        role="tab"
+        aria-controls="pending"
+        aria-selected="false"
+        >Pending</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        id="completed-tab"
+        data-toggle="tab"
+        href="#completed"
+        role="tab"
+        aria-controls="completed"
+        aria-selected="false"
+        >Completed</a
+      >
+    </li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
+    <div
+      class="tab-pane fade show active"
+      id="all"
+      role="tabpanel"
+      aria-labelledby="all-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="all_problems"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">#</th>
+              <th scope="col">Category</th>
+              <th scope="col">Description</th>
+              <th scope="col">Location</th>
+              <th scope="col">Date</th>
+              <% if(user.role !== 'STAFF') { %>
+              <th scope="col">Reported by</th>
+              <% } %>
+              <th scope="col">Level</th>
+              <th scope="col">Assigned</th>
+              <th scope="col">Assigned to</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Completed by</th>
+              <% if(user.role === 'ADMIN') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% problems.forEach((problem) => { %>
+            <tr>
+              <td><%= problem.srno %></td>
+              <td><%= problem.category %></td>
+              <td><%= problem.description%></td>
+              <td><%= problem.location %></td>
+              <td><%= problem.date.toString().substring(4,15) %></td>
+              <% if(user.role !== 'STAFF') { %>
+              <td>
+                <%= problem.reported_by.name + " : " +
+                problem.reported_by.emp_id %>
+              </td>
+              <% } %>
+              <td><%= problem.level %></td>
+              <td>
+                <% if(problem.assigned === true) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.assigned ? problem.assigned_to.emp_id + ":" +
+                problem.assigned_to.name : "N.A." %>
+              </td>
+              <td>
+                <% if(problem.completed === true) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.completed ? problem.completed_by.emp_id + ":" +
+                problem.completed_by.name : "N.A." %>
+              </td>
+              <% if(user.role === 'ADMIN') { %>
+              <td class="del-col">
+                <a
+                  href="/problems/delete/<%= problem._id %>"
+                  class="btn btn-danger"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/escalate/<%= problem._id %>"
+                  class="btn btn-secondary"
+                  ><i class="fas fa-arrow-circle-up"></i
+                ></a>
+                <% } %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              !problem.completed && problem.level <= user.role.split('-')[1]) {
+              %>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Assign</a
+                >
+                <% } else { %> <% if(problem.assigned_to._id.toString() !==
+                user._id.toString() ) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Pull</a
+                >
+                <% }} %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              problem.assigned && problem.assigned_to._id.toString() ===
+              user._id.toString() && !problem.completed) { %>
+              <td>
+                <a
+                  href="/problems/complete/<%= problem._id %>"
+                  class="btn btn-success"
+                  ><i class="fas fa-check-double"></i
+                ></a>
+              </td>
+              <% } %>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+      class="tab-pane fade"
+      id="unassigned"
+      role="tabpanel"
+      aria-labelledby="unassigned-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="unassigned_problems"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">#</th>
+              <th scope="col">Category</th>
+              <th scope="col">Description</th>
+              <th scope="col">Location</th>
+              <th scope="col">Date</th>
+              <% if(user.role !== 'STAFF') { %>
+              <th scope="col">Reported by</th>
+              <% } %>
+              <th scope="col">Level</th>
+              <th scope="col">Assigned</th>
+              <th scope="col">Assigned to</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Completed by</th>
+              <% if(user.role === 'ADMIN') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% problems.forEach((problem) => { %> <% if(!problem.assigned) { %>
+            <tr>
+              <td><%= problem.srno %></td>
+              <td><%= problem.category %></td>
+              <td><%= problem.description%></td>
+              <td><%= problem.location %></td>
+              <td><%= problem.date.toString().substring(4,15) %></td>
+              <% if(user.role !== 'STAFF') { %>
+              <td>
+                <%= problem.reported_by.name + " : " +
+                problem.reported_by.emp_id %>
+              </td>
+              <% } %>
+              <td><%= problem.level %></td>
+              <td>
+                <% if(problem.assigned === true) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.assigned ? problem.assigned_to.emp_id + ":" +
+                problem.assigned_to.name : "N.A." %>
+              </td>
+              <td>
+                <% if(problem.completed === true) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.completed === true ? problem.completed_by.emp_id +
+                ":" + problem.completed_by.name : "N.A." %>
+              </td>
+              <% if(user.role === 'ADMIN') { %>
+              <td class="del-col">
+                <a
+                  href="/problems/delete/<%= problem._id %>"
+                  class="btn btn-danger"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/escalate/<%= problem._id %>"
+                  class="btn btn-secondary"
+                  ><i class="fas fa-arrow-circle-up"></i
+                ></a>
+                <% } %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              !problem.completed) { %>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Assign</a
+                >
+                <% } else { %> <% if(problem.assigned_to.emp_id !== user.emp_id
+                ) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Pull</a
+                >
+                <% }} %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              problem.assigned && problem.assigned_to._id.toString() ===
+              user._id.toString() && !problem.completed) { %>
+              <td>
+                <a
+                  href="/problems/complete/<%= problem._id %>"
+                  class="btn btn-success"
+                  ><i class="fas fa-check-double"></i
+                ></a>
+              </td>
+              <% } %>
+            </tr>
+            <% }}) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+      class="tab-pane fade"
+      id="pending"
+      role="tabpanel"
+      aria-labelledby="pending-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="all_problems"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">#</th>
+              <th scope="col">Category</th>
+              <th scope="col">Description</th>
+              <th scope="col">Location</th>
+              <th scope="col">Date</th>
+              <% if(user.role !== 'STAFF') { %>
+              <th scope="col">Reported by</th>
+              <% } %>
+              <th scope="col">Level</th>
+              <th scope="col">Assigned</th>
+              <th scope="col">Assigned to</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Completed by</th>
+              <% if(user.role === 'ADMIN') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% problems.forEach((problem) => { %> <% if(problem.assigned &&
+            !problem.completed) { %>
+            <tr>
+              <td><%= problem.srno %></td>
+              <td><%= problem.category %></td>
+              <td><%= problem.description%></td>
+              <td><%= problem.location %></td>
+              <td><%= problem.date.toString().substring(4,15) %></td>
+              <% if(user.role !== 'STAFF') { %>
+              <td>
+                <%= problem.reported_by.name + " : " +
+                problem.reported_by.emp_id %>
+              </td>
+              <% } %>
+              <td><%= problem.level %></td>
+              <td>
+                <% if(problem.assigned === true) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.assigned ? problem.assigned_to.emp_id + ":" +
+                problem.assigned_to.name : "N.A." %>
+              </td>
+              <td>
+                <% if(problem.completed === true) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.completed === true ? problem.completed_by.emp_id +
+                ":" + problem.completed_by.name : "N.A." %>
+              </td>
+              <% if(user.role === 'ADMIN') { %>
+              <td class="del-col">
+                <a
+                  href="/problems/delete/<%= problem._id %>"
+                  class="btn btn-danger"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/escalate/<%= problem._id %>"
+                  class="btn btn-secondary"
+                  ><i class="fas fa-arrow-circle-up"></i
+                ></a>
+                <% } %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              !problem.completed) { %>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Assign</a
+                >
+                <% } else { %> <% if(problem.assigned_to.emp_id !== user.emp_id
+                ) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Pull</a
+                >
+                <% }} %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              problem.assigned && problem.assigned_to._id.toString() ===
+              user._id.toString() && !problem.completed) { %>
+              <td>
+                <a
+                  href="/problems/complete/<%= problem._id %>"
+                  class="btn btn-success"
+                  ><i class="fas fa-check-double"></i
+                ></a>
+              </td>
+              <% } %>
+            </tr>
+            <% }}) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+      class="tab-pane fade"
+      id="completed"
+      role="tabpanel"
+      aria-labelledby="completed-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="all_problems"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">#</th>
+              <th scope="col">Category</th>
+              <th scope="col">Description</th>
+              <th scope="col">Location</th>
+              <th scope="col">Date</th>
+              <% if(user.role !== 'STAFF') { %>
+              <th scope="col">Reported by</th>
+              <% } %>
+              <th scope="col">Level</th>
+              <th scope="col">Assigned</th>
+              <th scope="col">Assigned to</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Completed by</th>
+              <% if(user.role === 'ADMIN') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE') { %>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% problems.forEach((problem) => { %> <% if(problem.completed) {%>
+            <tr>
+              <td><%= problem.srno %></td>
+              <td><%= problem.category %></td>
+              <td><%= problem.description%></td>
+              <td><%= problem.location %></td>
+              <td><%= problem.date.toString().substring(4,15) %></td>
+              <% if(user.role !== 'STAFF') { %>
+              <td>
+                <%= problem.reported_by.name + " : " +
+                problem.reported_by.emp_id %>
+              </td>
+              <% } %>
+              <td><%= problem.level %></td>
+              <td>
+                <% if(problem.assigned ) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.assigned ? problem.assigned_to.emp_id + ":" +
+                problem.assigned_to.name : "N.A." %>
+              </td>
+              <td>
+                <% if(problem.completed ) { %>
+                <i class="fas fa-check-circle"></i>
+                <% } else { %>
+                <i class="fas fa-times-circle"></i>
+                <% } %>
+              </td>
+              <td>
+                <%= problem.completed ? problem.completed_by.emp_id + ":" +
+                problem.completed_by.name : "N.A." %>
+              </td>
+              <% if(user.role === 'ADMIN') { %>
+              <td class="del-col">
+                <a
+                  href="/problems/delete/<%= problem._id %>"
+                  class="btn btn-danger"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/escalate/<%= problem._id %>"
+                  class="btn btn-secondary"
+                  ><i class="fas fa-arrow-circle-up"></i
+                ></a>
+                <% } %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              !problem.completed) { %>
+              <td>
+                <% if(!problem.assigned) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Assign</a
+                >
+                <% } else { %> <% if(problem.assigned_to.emp_id !== user.emp_id
+                ) { %>
+                <a
+                  href="/problems/assign/<%= problem._id %>"
+                  class="btn btn-info"
+                  >Pull</a
+                >
+                <% }} %>
+              </td>
+              <% } %> <% if(user.role.split('-')[0] === 'EXECUTIVE' &&
+              problem.assigned && problem.assigned_to._id.toString() ===
+              user._id.toString() && !problem.completed) { %>
+              <td>
+                <a
+                  href="/problems/complete/<%= problem._id %>"
+                  class="btn btn-success"
+                  ><i class="fas fa-check-double"></i
+                ></a>
+              </td>
+              <% } %>
+            </tr>
+            <% }}) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <% } else { %> <% if(typeof employeeList == "undefined") { %>
+  <!-- employeeList
+  is not defined so it was rendered by /problems -->
+  <div class="d-flex justify-content-center">No problems reported yet.</div>
+  <% } else { %>
+  <!-- employeeList defined so was rendered by /employees -->
+  <!-- define table for employeeList here-->
+  <h4 class="text-info">List of employees</h4>
+
+  <ul class="nav nav-tabs" id="employeeTab" role="tablist">
+    <li class="nav-item">
+      <a
+        class="nav-link active"
+        id="admin-tab"
+        data-toggle="tab"
+        href="#admin"
+        role="tab"
+        aria-controls="admin"
+        aria-selected="true"
+        >Admins</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        id="execs-tab"
+        data-toggle="tab"
+        href="#execs"
+        role="tab"
+        aria-controls="execs"
+        aria-selected="false"
+        >Executives</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        id="staff-tab"
+        data-toggle="tab"
+        href="#staff"
+        role="tab"
+        aria-controls="staff"
+        aria-selected="false"
+        >Staff</a
+      >
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <div
+      class="tab-pane active"
+      id="admin"
+      role="tabpanel"
+      aria-labelledby="admin-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="admin-table"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">Employee ID</th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% employeeList.forEach((e) => { %> <% if(e.role === "ADMIN") {%>
+            <tr>
+              <td><%= e.emp_id %></td>
+              <td><%= e.name %></td>
+              <td><%= e.email %></td>
+              <% if(e.emp_id !== user.emp_id) { %>
+              <td class="del-col">
+                <a href="/employee/<%= e._id %>" class="btn btn-danger">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <% } %>
+            </tr>
+
+            <% }}) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="tab-pane"
+      id="execs"
+      role="tabpanel"
+      aria-labelledby="execs-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="execs-table"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">Employee ID</th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Role</th>
+
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% employeeList.forEach((e) => { %> <% if(e.role.split('-')[0] ===
+            "EXECUTIVE") {%>
+            <tr>
+              <td><%= e.emp_id %></td>
+              <td><%= e.name %></td>
+              <td><%= e.email %></td>
+              <td><%=e.role %></td>
+              <% if(e._id !== user._id) { %>
+              <td class="del-col">
+                <a href="/employee/<%= e._id %>" class="btn btn-danger">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <% } %>
+            </tr>
+
+            <% }}) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="tab-pane"
+      id="staff"
+      role="tabpanel"
+      aria-labelledby="staff-tab"
+    >
+      <div class="table-responsive-lg  shadow-lg p-2 mb-5 bg-body rounded">
+        <table
+          class="table table-striped table-hover table-borderless align-middle"
+          id="staff-table"
+        >
+          <thead>
+            <tr class="table-info">
+              <th scope="col">Employee ID</th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% employeeList.forEach((e) => { %> <% if(e.role === "STAFF") {%>
+            <tr>
+              <td><%= e.emp_id %></td>
+              <td><%= e.name %></td>
+              <td><%= e.email %></td>
+              <% if(e._id !== user._id) { %>
+              <td class="del-col">
+                <a href="/employee/<%= e._id %>" class="btn btn-danger">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </td>
+              <% } %>
+            </tr>
+
+            <% }}) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <% } %> <% } %>
+</div>
+
+<div
+  class="modal fade"
+  id="reportModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Generate Report</h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <span class="text-danger">NOTE: Completed problems are automatically assigned problems as well.</span>
+        <form method="POST" action="/report">
+          <div class="form-group">
+          <div class="form-check my-auto">
+            <input type="radio" class="btn-check" name="reportOptions" autocomplete="off" id="completedCheck" value="c">
+            <label class="btn btn-outline-primary" for="completedCheck">Completed: Assigned and completed</label>
+          </div>
+          <div class="form-check my-auto">
+            <input type="radio" class="btn-check" name="reportOptions" autocomplete="off" id="unassignedCheck" value="u">
+            <label class="btn btn-outline-danger" for="unassignedCheck">Unassigned</label>
+          </div>
+          <div class="form-check my-auto">
+            <input type="radio" class="btn-check" name="reportOptions" autocomplete="off" id="assignedCheck" value="p">
+            <label class="btn btn-outline-info" for="assignedCheck">Pending: Assigned but not completed)</label>
+          </div>
+          <div class="form-check my-auto">
+            <input type="radio" class="btn-check" name="reportOptions" autocomplete="off" id="allCheck" value="a" checked>
+            <label class="btn btn-outline-success" for="allCheck">All</label>
+          </div>
+          <button type="submit" class="btn btn-primary mx-auto h5"><i class="fas fa-download"></i></button>
+        </form>
+        </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function () {
+    $("#myModal").on("shown.bs.modal", function () {
+      $("#myInput").trigger("focus");
+    });
+
+    // $("#get-report").on("click", (e) => {
+    //   e.preventDefault();
+    //   $("#report-form").toggleClass("d-none");
+    // });
+  });
+</script>
